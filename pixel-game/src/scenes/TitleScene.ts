@@ -66,6 +66,7 @@ export class TitleScene extends Phaser.Scene {
 
     s('仙剑奇侠传', 78, '#f2e6c0', 30);
     s('像 素 版', 116, '#9fb8d8', 12);
+    s('作者：幸', 140, '#7a8aa0', 9);
     if (Math.floor(this.gameTime * 1.6) % 2 === 0) s('按 回车 / Z 键 开始', 186, '#ffd24d', 11);
     this.add.text(SCREEN_W / 2, 210, 'L 键 — 选关调试', {
       fontFamily: FONT_FAMILY, fontSize: '8px', color: '#4a5068',
