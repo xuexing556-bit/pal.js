@@ -216,3 +216,9 @@ pip-log.txt
 
 # 完整通关录像体积较大，仅本地保留供上传社媒
 media/demo-chapter1.mp4
+
+#############
+## Node.js
+#############
+
+node_modules/
