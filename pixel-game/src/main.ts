@@ -6,6 +6,7 @@ import { ExploreScene } from './scenes/ExploreScene';
 import { BattleScene } from './scenes/BattleScene';
 import { WeddingScene } from './scenes/WeddingScene';
 import { EndingScene } from './scenes/EndingScene';
+import { DebugScene } from './scenes/DebugScene';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -21,7 +22,7 @@ const config: Phaser.Types.Core.GameConfig = {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
-  scene: [BootScene, TitleScene, ExploreScene, BattleScene, WeddingScene, EndingScene],
+  scene: [BootScene, TitleScene, ExploreScene, BattleScene, WeddingScene, EndingScene, DebugScene],
 };
 
 new Phaser.Game(config);

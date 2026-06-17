@@ -8,6 +8,7 @@ import type { ChiptuneEngine } from '../core/ChiptuneEngine';
 
 export class TitleScene extends Phaser.Scene {
   private gameTime = 0;
+  private debugKey: Phaser.Input.Keyboard.Key | null = null;
 
   constructor() { super('TitleScene'); }
 
@@ -16,6 +17,7 @@ export class TitleScene extends Phaser.Scene {
     music.unlock();
     music.play('title');
     this.input.keyboard?.once('keydown', () => { music.unlock(); });
+    this.debugKey = this.input.keyboard?.addKey('KeyL') ?? null;
   }
 
   update(_time: number, dt: number): void {
@@ -23,9 +25,17 @@ export class TitleScene extends Phaser.Scene {
     inputMgr.update();
     this.gameTime += dt / 1000;
 
+    if (this.debugKey && Phaser.Input.Keyboard.JustDown(this.debugKey)) {
+      this.scene.start('DebugScene');
+      inputMgr.endFrame();
+      return;
+    }
+
     if (inputMgr.took('confirm')) {
       const music = this.registry.get('chiptune') as ChiptuneEngine;
       music.unlock();
+      // 清除可能残留的章节实例，确保从第一章开始
+      this.registry.remove('chapter');
       this.scene.start('ExploreScene', { mapId: 'inn', tx: 10, ty: 12, dir: 'down' });
     }
     inputMgr.endFrame();
@@ -55,8 +65,11 @@ export class TitleScene extends Phaser.Scene {
       }).setOrigin(0.5, 0);
 
     s('仙剑奇侠传', 78, '#f2e6c0', 30);
-    s('像 素 版 · 第 一 章', 116, '#9fb8d8', 12);
+    s('像 素 版', 116, '#9fb8d8', 12);
     if (Math.floor(this.gameTime * 1.6) % 2 === 0) s('按 回车 / Z 键 开始', 186, '#ffd24d', 11);
+    this.add.text(SCREEN_W / 2, 210, 'L 键 — 选关调试', {
+      fontFamily: FONT_FAMILY, fontSize: '8px', color: '#4a5068',
+    }).setOrigin(0.5, 0);
     this.add.text(SCREEN_W / 2, 222, '方向键移动 · 回车/Z 确认 · M 静音 · 致敬经典之同人习作', {
       fontFamily: FONT_FAMILY, fontSize: '8px', color: '#6a7390',
     }).setOrigin(0.5, 0);
