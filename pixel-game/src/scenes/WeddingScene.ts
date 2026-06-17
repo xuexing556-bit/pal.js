@@ -15,6 +15,12 @@ export class WeddingScene extends Phaser.Scene {
   private music!: ChiptuneEngine;
   private dialogManager!: DialogManager;
 
+  // 持久显示对象
+  private gfx!: Phaser.GameObjects.Graphics;
+  private heroImg!: Phaser.GameObjects.Image;
+  private lingerImg!: Phaser.GameObjects.Image;
+  private grannyImg!: Phaser.GameObjects.Image;
+
   constructor() { super('WeddingScene'); }
 
   create(): void {
@@ -23,6 +29,17 @@ export class WeddingScene extends Phaser.Scene {
     this.music = this.registry.get('chiptune') as ChiptuneEngine;
     this.dialogManager = new DialogManager(this, this.music);
     this.music.play('wedding');
+
+    // 创建持久显示对象
+    this.gfx = this.add.graphics();
+    this.add.text(SCREEN_W / 2, 26, '囍', {
+      fontFamily: FONT_FAMILY, fontSize: '36px', color: '#ffd24d',
+      shadow: { color: '#000', fill: true, offsetX: 1, offsetY: 1 },
+    }).setOrigin(0.5, 0);
+
+    this.heroImg = this.add.image(124, 100, 'sprite:hero').setDisplaySize(36, 48);
+    this.lingerImg = this.add.image(168, 100, 'sprite:linger').setDisplaySize(36, 48);
+    this.grannyImg = this.add.image(216, 108, 'sprite:granny').setDisplaySize(27, 36);
 
     this.time.delayedCall(50, () => { this.weddingScript(); });
   }
@@ -51,18 +68,14 @@ export class WeddingScene extends Phaser.Scene {
     if (this.inputMgr.took('mute')) this.music.toggleMute();
     if (this.dialogManager.active) this.dialogManager.update(dt / 1000, this.inputMgr);
     this.inputMgr.endFrame();
-  }
 
-  render(): void {
-    const g = this.add.graphics();
+    // 重绘图形
+    const g = this.gfx;
+    g.clear();
     g.fillStyle(0x4a0e16, 1); g.fillRect(0, 0, SCREEN_W, SCREEN_H);
     g.fillStyle(0x5e1620, 1); g.fillRect(0, 150, SCREEN_W, 90);
 
-    this.add.text(SCREEN_W / 2, 26, '囍', {
-      fontFamily: FONT_FAMILY, fontSize: '36px', color: '#ffd24d',
-      shadow: { color: '#000', fill: true, offsetX: 1, offsetY: 1 },
-    }).setOrigin(0.5, 0);
-
+    // 红烛动画
     for (let c = 0; c < 2; c++) {
       const cx = c === 0 ? 70 : 244;
       g.fillStyle(0xd04040, 1); g.fillRect(cx, 96, 6, 40);
@@ -72,12 +85,7 @@ export class WeddingScene extends Phaser.Scene {
       g.fillStyle(0xff8030, 1); g.fillRect(cx + 2, 92, 2, 3);
     }
 
-    this.add.image(124, 100, 'sprite:hero').setDisplaySize(36, 48);
-    this.add.image(168, 100, 'sprite:linger').setDisplaySize(36, 48);
-    this.add.image(216, 108, 'sprite:granny').setDisplaySize(27, 36);
-
     g.fillStyle(0xa02030, 1); g.fillRect(110, 156, 110, 24);
     g.fillStyle(0xffd24d, 1); g.fillRect(110, 156, 110, 2); g.fillRect(110, 178, 110, 2);
-    g.destroy();
   }
 }

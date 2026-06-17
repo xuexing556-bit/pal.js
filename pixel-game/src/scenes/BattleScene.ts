@@ -27,6 +27,17 @@ export class BattleScene extends Phaser.Scene {
   private flash = 0;
   private battleTime = 0;
 
+  // 持久显示对象
+  private gfx!: Phaser.GameObjects.Graphics;
+  private enemyImg!: Phaser.GameObjects.Image;
+  private eNameText!: Phaser.GameObjects.Text;
+  private heroNameText!: Phaser.GameObjects.Text;
+  private heroHpText!: Phaser.GameObjects.Text;
+  private heroMpText!: Phaser.GameObjects.Text;
+  private menuItems: { cursor: Phaser.GameObjects.Text; label: Phaser.GameObjects.Text }[] = [];
+  private msgText!: Phaser.GameObjects.Text;
+  private msgIndicator!: Phaser.GameObjects.Text;
+
   constructor() { super('BattleScene'); }
 
   init(data: BattleSceneData): void {
@@ -42,6 +53,30 @@ export class BattleScene extends Phaser.Scene {
     this.refreshMenu();
     this.say([e.intro || (e.name + '挡住了去路！')], 'menu');
     this.music.play('battle');
+  }
+
+  create(): void {
+    this.gfx = this.add.graphics();
+    this.enemyImg = this.add.image(SCREEN_W / 2, 80, 'sprite:hero').setScale(4);
+
+    const f = (sz: string, c: string) => ({ fontFamily: FONT_FAMILY, fontSize: sz, color: c });
+    this.eNameText = this.add.text(16, 13, '', f('10px', '#f2a0a0'));
+    this.heroNameText = this.add.text(16, SCREEN_H - 58, '李逍遥', f('10px', '#7ec8e3'));
+    this.heroHpText = this.add.text(16, SCREEN_H - 44, '', f('9px', '#e8e8e8'));
+    this.heroMpText = this.add.text(16, SCREEN_H - 27, '', f('9px', '#e8e8e8'));
+
+    // 菜单项池（最多 3 项）
+    for (let i = 0; i < 3; i++) {
+      const y = SCREEN_H - 60 + i * 14;
+      this.menuItems.push({
+        cursor: this.add.text(SCREEN_W - 122, y, '', f('10px', '#ffd24d')),
+        label: this.add.text(SCREEN_W - 108, y, '', f('10px', '#e8e8e8')),
+      });
+    }
+
+    // 消息区
+    this.msgText = this.add.text(18, SCREEN_H - 98, '', f('10px', '#f2e6c0'));
+    this.msgIndicator = this.add.text(SCREEN_W - 26, SCREEN_H - 88, '', f('9px', '#ffd24d'));
   }
 
   private refreshMenu(): void {
@@ -66,18 +101,91 @@ export class BattleScene extends Phaser.Scene {
 
     if (this.phase === 'msg') {
       if (this.inputMgr.took('confirm')) { this.msgs.shift(); if (!this.msgs.length) this.advance(); }
-      this.inputMgr.endFrame(); return;
+      this.inputMgr.endFrame();
+      this.drawFrame();
+      return;
     }
     if (this.phase === 'menu') {
       if (this.inputMgr.took('up')) this.sel = (this.sel + this.menu.length - 1) % this.menu.length;
       if (this.inputMgr.took('down')) this.sel = (this.sel + 1) % this.menu.length;
       if (this.inputMgr.took('confirm')) {
         const item = this.menu[this.sel];
-        if (item.off) { this.say(['现在用不了。'], 'menu'); this.inputMgr.endFrame(); return; }
+        if (item.off) { this.say(['现在用不了。'], 'menu'); this.inputMgr.endFrame(); this.drawFrame(); return; }
         this.heroAct(item.key);
       }
     }
     this.inputMgr.endFrame();
+    this.drawFrame();
+  }
+
+  private drawFrame(): void {
+    const g = this.gfx;
+    const h = this.state.hero, e = this.enemy;
+
+    g.clear();
+    g.fillStyle(0x101424, 1); g.fillRect(0, 0, SCREEN_W, SCREEN_H);
+    g.fillStyle(0x1a2238, 1); g.fillRect(0, 130, SCREEN_W, 40);
+    g.fillStyle(0x232c48, 1); g.fillRect(0, 150, SCREEN_W, 20);
+
+    // 敌人精灵
+    let sx = 0, sy = 0;
+    if (this.shake > 0) { sx = Math.round(Math.sin(this.battleTime * 60) * 3); sy = Math.round(Math.cos(this.battleTime * 50) * 2); }
+    this.enemyImg.setTexture('sprite:' + e.spriteKey);
+    this.enemyImg.setPosition(SCREEN_W / 2 + sx, 80 + sy);
+
+    if (this.flash > 0) { g.fillStyle(0xffffff, this.flash * 1.6); g.fillRect(0, 0, SCREEN_W, SCREEN_H); }
+
+    // 敌人信息
+    drawBox(g, 8, 8, 130, 30);
+    this.eNameText.setText(e.name);
+    drawHpBar(g, 16, 27, 110, 5, e.hp, e.maxhp, 0x3a1010, 0xd04040);
+
+    // 英雄信息
+    drawBox(g, 8, SCREEN_H - 64, 150, 56);
+    this.heroHpText.setText('体力 ' + h.hp + '/' + h.maxhp);
+    drawHpBar(g, 16, SCREEN_H - 33, 130, 4, h.hp, h.maxhp, 0x102a10, 0x40c050);
+    this.heroMpText.setText('真气 ' + h.mp + '/' + h.maxmp);
+    drawHpBar(g, 16, SCREEN_H - 16, 130, 4, h.mp, h.maxmp, 0x101a30, 0x5080e0);
+
+    // 菜单
+    if (this.phase === 'menu') {
+      const mh = this.menu.length * 14 + 14;
+      drawBox(g, SCREEN_W - 130, SCREEN_H - 8 - mh, 122, mh);
+      for (let i = 0; i < 3; i++) {
+        if (i < this.menu.length) {
+          const it = this.menu[i];
+          const y = SCREEN_H - mh + i * 14;
+          const color = it.off ? '#777' : (i === this.sel ? '#ffd24d' : '#e8e8e8');
+          this.menuItems[i].cursor.setText(i === this.sel ? '▶' : '');
+          this.menuItems[i].cursor.setY(y);
+          this.menuItems[i].label.setText(it.label);
+          this.menuItems[i].label.setY(y);
+          this.menuItems[i].label.setColor(color);
+          this.menuItems[i].cursor.setVisible(true);
+          this.menuItems[i].label.setVisible(true);
+        } else {
+          this.menuItems[i].cursor.setVisible(false);
+          this.menuItems[i].label.setVisible(false);
+        }
+      }
+    } else {
+      for (let i = 0; i < 3; i++) {
+        this.menuItems[i].cursor.setVisible(false);
+        this.menuItems[i].label.setVisible(false);
+      }
+    }
+
+    // 消息
+    if (this.phase === 'msg' && this.msgs.length) {
+      drawBox(g, 8, SCREEN_H - 110, SCREEN_W - 16, 36);
+      this.msgText.setText(this.msgs[0]);
+      this.msgText.setVisible(true);
+      this.msgIndicator.setText('▼');
+      this.msgIndicator.setVisible(true);
+    } else {
+      this.msgText.setVisible(false);
+      this.msgIndicator.setVisible(false);
+    }
   }
 
   private advance(): void {
@@ -126,49 +234,5 @@ export class BattleScene extends Phaser.Scene {
     const msgs = [e.name + '猛地扑了过来，李逍遥受到 ' + dmg + ' 点伤害！'];
     if (h.hp <= 0) { msgs.push('李逍遥眼前一黑，倒了下去……'); this.say(msgs, 'lose'); }
     else { this.say(msgs, 'menu'); }
-  }
-
-  render(): void {
-    if (!this.active) return;
-    const g = this.add.graphics();
-    const h = this.state.hero, e = this.enemy;
-
-    g.fillStyle(0x101424, 1); g.fillRect(0, 0, SCREEN_W, SCREEN_H);
-    g.fillStyle(0x1a2238, 1); g.fillRect(0, 130, SCREEN_W, 40);
-    g.fillStyle(0x232c48, 1); g.fillRect(0, 150, SCREEN_W, 20);
-
-    // 敌人精灵
-    let sx = 0, sy = 0;
-    if (this.shake > 0) { sx = Math.round(Math.sin(this.battleTime * 60) * 3); sy = Math.round(Math.cos(this.battleTime * 50) * 2); }
-    const enemyImg = this.add.image(SCREEN_W / 2 + sx, 80 + sy, 'sprite:' + e.spriteKey).setScale(4);
-
-    if (this.flash > 0) { g.fillStyle(0xffffff, this.flash * 1.6); g.fillRect(0, 0, SCREEN_W, SCREEN_H); }
-
-    drawBox(g, 8, 8, 130, 30);
-    this.add.text(16, 13, e.name, { fontFamily: FONT_FAMILY, fontSize: '10px', color: '#f2a0a0' });
-    drawHpBar(g, 16, 27, 110, 5, e.hp, e.maxhp, 0x3a1010, 0xd04040);
-
-    drawBox(g, 8, SCREEN_H - 64, 150, 56);
-    this.add.text(16, SCREEN_H - 58, '李逍遥', { fontFamily: FONT_FAMILY, fontSize: '10px', color: '#7ec8e3' });
-    this.add.text(16, SCREEN_H - 44, '体力 ' + h.hp + '/' + h.maxhp, { fontFamily: FONT_FAMILY, fontSize: '9px', color: '#e8e8e8' });
-    drawHpBar(g, 16, SCREEN_H - 33, 130, 4, h.hp, h.maxhp, 0x102a10, 0x40c050);
-    this.add.text(16, SCREEN_H - 27, '真气 ' + h.mp + '/' + h.maxmp, { fontFamily: FONT_FAMILY, fontSize: '9px', color: '#e8e8e8' });
-    drawHpBar(g, 16, SCREEN_H - 16, 130, 4, h.mp, h.maxmp, 0x101a30, 0x5080e0);
-
-    if (this.phase === 'menu') {
-      const mh = this.menu.length * 14 + 14;
-      drawBox(g, SCREEN_W - 130, SCREEN_H - 8 - mh, 122, mh);
-      for (let i = 0; i < this.menu.length; i++) {
-        const it = this.menu[i], y = SCREEN_H - mh + i * 14;
-        const color = it.off ? '#777' : (i === this.sel ? '#ffd24d' : '#e8e8e8');
-        if (i === this.sel) this.add.text(SCREEN_W - 122, y, '▶', { fontFamily: FONT_FAMILY, fontSize: '10px', color: '#ffd24d' });
-        this.add.text(SCREEN_W - 108, y, it.label, { fontFamily: FONT_FAMILY, fontSize: '10px', color });
-      }
-    } else if (this.phase === 'msg' && this.msgs.length) {
-      drawBox(g, 8, SCREEN_H - 110, SCREEN_W - 16, 36);
-      this.add.text(18, SCREEN_H - 98, this.msgs[0], { fontFamily: FONT_FAMILY, fontSize: '10px', color: '#f2e6c0' });
-      this.add.text(SCREEN_W - 26, SCREEN_H - 88, '▼', { fontFamily: FONT_FAMILY, fontSize: '9px', color: '#ffd24d' });
-    }
-    g.destroy();
   }
 }

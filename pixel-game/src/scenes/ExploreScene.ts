@@ -8,8 +8,11 @@ import type { InputManager } from '../core/InputManager';
 import type { ChiptuneEngine } from '../core/ChiptuneEngine';
 import { DialogManager } from '../core/DialogManager';
 import { MAPS, tileAt } from '../data/maps';
-import { TILE_INDEX, SOLID_TILES } from '../data/tiles';
+import { SOLID_TILES } from '../data/tiles';
 import { Chapter1 } from '../chapters/Chapter1';
+
+const MAX_TILES = 25 * 20;
+const MAX_ENTS = 12;
 
 export class ExploreScene extends Phaser.Scene {
   private state!: GameState;
@@ -27,6 +30,14 @@ export class ExploreScene extends Phaser.Scene {
   private gameTime = 0;
   private whiteFlash = 0;
   private flashCb: (() => void) | null = null;
+
+  // 持久显示对象
+  private gfx!: Phaser.GameObjects.Graphics;
+  private flashGfx!: Phaser.GameObjects.Graphics;
+  private tilePool: Phaser.GameObjects.Image[] = [];
+  private entPool: Phaser.GameObjects.Sprite[] = [];
+  private mapNameText!: Phaser.GameObjects.Text;
+  private hintText!: Phaser.GameObjects.Text;
 
   constructor() { super('ExploreScene'); }
 
@@ -60,6 +71,32 @@ export class ExploreScene extends Phaser.Scene {
       this.state.flags._introShown = true;
       this.chapter.intro?.(this);
     }
+
+    // 创建持久显示对象
+    this.gfx = this.add.graphics();
+    this.flashGfx = this.add.graphics();
+
+    // 预创建地图图块池
+    for (let i = 0; i < MAX_TILES; i++) {
+      const img = this.add.image(0, 0, '_tile_pool').setOrigin(0.5).setVisible(false);
+      this.tilePool.push(img);
+    }
+
+    // 预创建实体精灵池
+    for (let i = 0; i < MAX_ENTS; i++) {
+      const s = this.add.sprite(0, 0, 'sprite:hero').setOrigin(0, 0).setVisible(false);
+      this.entPool.push(s);
+    }
+
+    // HUD 文字
+    this.mapNameText = this.add.text(6, 4, '', {
+      fontFamily: FONT_FAMILY, fontSize: '9px', color: '#f2e6c0',
+      shadow: { color: '#000', fill: true, offsetX: 1, offsetY: 1 },
+    });
+    this.hintText = this.add.text(6, SCREEN_H - 13, '', {
+      fontFamily: FONT_FAMILY, fontSize: '9px', color: '#9fd8a8',
+      shadow: { color: '#000', fill: true, offsetX: 1, offsetY: 1 },
+    });
   }
 
   changeMap(mapId: string, tx: number, ty: number, dir?: string): void {
@@ -92,17 +129,85 @@ export class ExploreScene extends Phaser.Scene {
     if (this.whiteFlash > 0) {
       this.whiteFlash -= dt / 1000;
       if (this.whiteFlash <= 0.6 && this.flashCb) { const cb = this.flashCb; this.flashCb = null; cb(); }
+      this.drawFrame();
       this.inputMgr.endFrame();
       return;
     }
     if (this.dialogManager.active) {
       this.dialogManager.update(dt / 1000, this.inputMgr);
+      this.drawFrame();
       this.inputMgr.endFrame();
       return;
     }
     this.updatePlayer(dt / 1000);
     if (this.inputMgr.took('confirm')) this.tryInteract();
     this.inputMgr.endFrame();
+
+    this.drawFrame();
+  }
+
+  private drawFrame(): void {
+    // 背景 + 地图图块
+    this.gfx.clear();
+    this.gfx.fillStyle(0x000000, 1);
+    this.gfx.fillRect(0, 0, SCREEN_W, SCREEN_H);
+
+    let tileIdx = 0;
+    if (this.mapDef) {
+      for (let y = 0; y < this.mapDef.grid.length; y++) {
+        for (let x = 0; x < this.mapDef.grid[0].length; x++) {
+          if (tileIdx >= MAX_TILES) break;
+          const name = tileAt(this.mapDef, x, y);
+          const img = this.tilePool[tileIdx];
+          img.setTexture(name);
+          img.setPosition(x * TILE + 8, y * TILE + 8);
+          img.setVisible(true);
+          tileIdx++;
+        }
+      }
+    }
+    for (let i = tileIdx; i < MAX_TILES; i++) this.tilePool[i].setVisible(false);
+
+    // NPC + 玩家 y 排序
+    const ents: { y: number; key: string; px: number; py: number; bob: number; flip?: boolean }[] = [];
+    for (const n of this.npcs) {
+      ents.push({ y: n.y * TILE, key: 'sprite:' + n.spriteKey, px: n.x * TILE + 2, py: n.y * TILE, bob: 0 });
+    }
+    const p = this.player;
+    const bob = p.walking ? (Math.floor(this.gameTime * 8) % 2) : 0;
+    ents.push({ y: p.py, key: 'sprite:hero', px: p.px + 2, py: p.py, bob, flip: p.dir === 'left' });
+    ents.sort((a, b) => a.y - b.y);
+
+    for (let i = 0; i < MAX_ENTS; i++) {
+      if (i < ents.length) {
+        const e = ents[i];
+        const sp = this.entPool[i];
+        sp.setTexture(e.key);
+        sp.setPosition(e.px, e.py - e.bob);
+        sp.setFlipX(!!e.flip);
+        sp.setVisible(true);
+      } else {
+        this.entPool[i].setVisible(false);
+      }
+    }
+
+    // 白闪
+    this.flashGfx.clear();
+    if (this.whiteFlash > 0) {
+      this.flashGfx.fillStyle(0xffffff, Math.min(1, this.whiteFlash));
+      this.flashGfx.fillRect(0, 0, SCREEN_W, SCREEN_H);
+    }
+
+    // HUD
+    this.mapNameText.setText(this.mapDef?.name ?? '');
+    this.mapNameText.setVisible(!!this.mapDef);
+    const hint = this.chapter.getHint(this.state);
+    if (hint && !this.dialogManager.active) {
+      this.hintText.setText('◆ ' + hint);
+      this.hintText.setVisible(true);
+    } else {
+      this.hintText.setVisible(false);
+    }
   }
 
   private updatePlayer(dt: number): void {
@@ -164,60 +269,5 @@ export class ExploreScene extends Phaser.Scene {
     else if (t === 'bed' && this.mapId === 'inn' && this.state.flags.auntSick) this.chapter.interact(this, this.state, 'aunt');
     else if (t === 'bed' && this.mapId === 'inn_night') this.chapter.interact(this, this.state, 'bed_inn_night');
     else if (t === 'campfire') this.chapter.interact(this, this.state, 'campfire');
-  }
-
-  render(): void {
-    const g = this.add.graphics();
-    g.fillStyle(0x000000, 1); g.fillRect(0, 0, SCREEN_W, SCREEN_H);
-
-    // 地图图块 — 用 addImage 逐块放置
-    if (this.mapDef) {
-      for (let y = 0; y < this.mapDef.grid.length; y++) {
-        for (let x = 0; x < this.mapDef.grid[0].length; x++) {
-          const name = tileAt(this.mapDef, x, y);
-          this.add.image(x * TILE + 8, y * TILE + 8, name).setOrigin(0.5);
-        }
-      }
-    }
-
-    // NPC + 玩家 y 排序
-    const ents: { y: number; key: string; px: number; py: number; bob: number; flip?: boolean }[] = [];
-    for (const n of this.npcs) {
-      ents.push({ y: n.y * TILE, key: 'sprite:' + n.spriteKey, px: n.x * TILE + 2, py: n.y * TILE, bob: 0 });
-    }
-    const p = this.player;
-    const bob = p.walking ? (Math.floor(this.gameTime * 8) % 2) : 0;
-    ents.push({ y: p.py, key: 'sprite:hero', px: p.px + 2, py: p.py, bob, flip: p.dir === 'left' });
-    ents.sort((a, b) => a.y - b.y);
-
-    for (const e of ents) {
-      const img = this.add.image(e.px, e.py - e.bob, e.key).setOrigin(0, 0);
-      if (e.flip) img.setFlipX(true);
-    }
-
-    g.destroy();
-
-    // HUD
-    if (this.mapDef) {
-      this.add.text(6, 4, this.mapDef.name, {
-        fontFamily: FONT_FAMILY, fontSize: '9px', color: '#f2e6c0',
-        shadow: { color: '#000', fill: true, offsetX: 1, offsetY: 1 },
-      });
-    }
-    const hint = this.chapter.getHint(this.state);
-    if (hint && !this.dialogManager.active) {
-      this.add.text(6, SCREEN_H - 13, '◆ ' + hint, {
-        fontFamily: FONT_FAMILY, fontSize: '9px', color: '#9fd8a8',
-        shadow: { color: '#000', fill: true, offsetX: 1, offsetY: 1 },
-      });
-    }
-
-    // 白闪
-    if (this.whiteFlash > 0) {
-      const fg = this.add.graphics();
-      fg.fillStyle(0xffffff, Math.min(1, this.whiteFlash));
-      fg.fillRect(0, 0, SCREEN_W, SCREEN_H);
-      fg.destroy();
-    }
   }
 }

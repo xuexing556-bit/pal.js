@@ -16,20 +16,20 @@ const KEYMAP: Record<string, string> = {
 export class InputManager {
   private down: Record<string, boolean> = {};
   private pressed: Record<string, boolean> = {};
-  private keys: Record<string, Phaser.Input.Keyboard.Key> = {};
+  private keys: Record<string, Phaser.Input.Keyboard.Key[]> = {};
 
   constructor(scene: Phaser.Scene) {
     if (!scene.input.keyboard) return;
     for (const [code, action] of Object.entries(KEYMAP)) {
-      if (!this.keys[action]) {
-        this.keys[action] = scene.input.keyboard.addKey(code);
-      }
+      if (!this.keys[action]) this.keys[action] = [];
+      this.keys[action].push(scene.input.keyboard.addKey(code));
     }
   }
 
   update(): void {
-    for (const [action, key] of Object.entries(this.keys)) {
-      if (key.isDown) {
+    for (const [action, keyList] of Object.entries(this.keys)) {
+      const anyDown = keyList.some(k => k.isDown);
+      if (anyDown) {
         if (!this.down[action]) {
           this.pressed[action] = true;
         }
