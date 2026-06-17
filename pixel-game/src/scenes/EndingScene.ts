@@ -2,9 +2,10 @@
  * EndingScene — 章节结尾过渡画面
  */
 import Phaser from 'phaser';
-import { SCREEN_W, SCREEN_H, FONT_FAMILY } from '../config';
+import { SCREEN_W, SCREEN_H } from '../config';
 import type { InputManager } from '../core/InputManager';
 import type { GameState } from '../types';
+import { pixelText } from '../core/UIHelper';
 import { Chapter2 } from '../chapters/Chapter2';
 
 export class EndingScene extends Phaser.Scene {
@@ -27,15 +28,9 @@ export class EndingScene extends Phaser.Scene {
     // 创建持久显示对象
     this.gfx = this.add.graphics();
 
-    const textOpts = (sz: string, c: string) => ({
-      fontFamily: FONT_FAMILY, fontSize: sz, color: c,
-      shadow: { color: '#000', fill: true, offsetX: 1, offsetY: 1 },
-    });
-    this.titleText = this.add.text(SCREEN_W / 2, 92, '', textOpts('18px', '#f2e6c0')).setOrigin(0.5, 0);
-    this.subtitleText = this.add.text(SCREEN_W / 2, 130, '', textOpts('10px', '#9fb8d8')).setOrigin(0.5, 0);
-    this.promptText = this.add.text(SCREEN_W / 2, 210, '', {
-      fontFamily: FONT_FAMILY, fontSize: '9px', color: '#6a7390',
-    }).setOrigin(0.5, 0);
+    this.titleText = pixelText(this, SCREEN_W / 2, 92, '', 18, '#f2e6c0', 0.5);
+    this.subtitleText = pixelText(this, SCREEN_W / 2, 130, '', 10, '#9fb8d8', 0.5);
+    this.promptText = pixelText(this, SCREEN_W / 2, 210, '', 9, '#6a7390', 0.5, false);
 
     // 根据当前章节设置文字
     const state = this.registry.get('gameState') as GameState | undefined;

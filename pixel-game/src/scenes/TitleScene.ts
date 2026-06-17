@@ -2,9 +2,10 @@
  * TitleScene — 标题画面
  */
 import Phaser from 'phaser';
-import { SCREEN_W, SCREEN_H, FONT_FAMILY } from '../config';
+import { SCREEN_W, SCREEN_H } from '../config';
 import type { InputManager } from '../core/InputManager';
 import type { ChiptuneEngine } from '../core/ChiptuneEngine';
+import { pixelText } from '../core/UIHelper';
 
 export class TitleScene extends Phaser.Scene {
   private gameTime = 0;
@@ -24,23 +25,14 @@ export class TitleScene extends Phaser.Scene {
     // 创建持久显示对象
     this.gfx = this.add.graphics();
 
-    const textOpts = (size: number, color: string) => ({
-      fontFamily: FONT_FAMILY, fontSize: `${size}px`, color,
-      shadow: { color: '#000', fill: true, offsetX: 1, offsetY: 1 },
-    });
+    pixelText(this, SCREEN_W / 2, 78, '仙剑奇侠传', 30, '#f2e6c0', 0.5);
+    pixelText(this, SCREEN_W / 2, 116, '像 素 版', 12, '#9fb8d8', 0.5);
+    pixelText(this, SCREEN_W / 2, 140, '作者：幸', 9, '#7a8aa0', 0.5);
 
-    this.add.text(SCREEN_W / 2, 78, '仙剑奇侠传', textOpts(30, '#f2e6c0')).setOrigin(0.5, 0);
-    this.add.text(SCREEN_W / 2, 116, '像 素 版', textOpts(12, '#9fb8d8')).setOrigin(0.5, 0);
-    this.add.text(SCREEN_W / 2, 140, '作者：幸', textOpts(9, '#7a8aa0')).setOrigin(0.5, 0);
+    this.startText = pixelText(this, SCREEN_W / 2, 186, '按 回车 / Z 键 开始', 11, '#ffd24d', 0.5);
 
-    this.startText = this.add.text(SCREEN_W / 2, 186, '按 回车 / Z 键 开始', textOpts(11, '#ffd24d')).setOrigin(0.5, 0);
-
-    this.add.text(SCREEN_W / 2, 210, 'L 键 — 选关调试', {
-      fontFamily: FONT_FAMILY, fontSize: '8px', color: '#4a5068',
-    }).setOrigin(0.5, 0);
-    this.add.text(SCREEN_W / 2, 222, '方向键移动 · 回车/Z 确认 · M 静音 · 致敬经典之同人习作', {
-      fontFamily: FONT_FAMILY, fontSize: '8px', color: '#6a7390',
-    }).setOrigin(0.5, 0);
+    pixelText(this, SCREEN_W / 2, 210, 'L 键 — 选关调试', 8, '#4a5068', 0.5, false);
+    pixelText(this, SCREEN_W / 2, 222, '方向键移动 · 回车/Z 确认 · M 静音 · 致敬经典之同人习作', 8, '#6a7390', 0.5, false);
   }
 
   update(_time: number, dt: number): void {

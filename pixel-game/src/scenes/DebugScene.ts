@@ -80,7 +80,7 @@ export class DebugScene extends Phaser.Scene {
 
     // 预创建文字池
     for (let i = 0; i < POOL_SIZE; i++) {
-      const t = this.add.text(0, 0, '', { fontFamily: FONT_FAMILY, fontSize: '10px', color: '#fff' });
+      const t = this.add.text(0, 0, '', { fontFamily: FONT_FAMILY, fontSize: '10px', color: '#fff', resolution: 2 });
       t.setVisible(false);
       this.textPool.push(t);
     }

@@ -9,6 +9,7 @@ import { SPRITE_DEFS } from '../data/sprites';
 import { ChiptuneEngine } from '../core/ChiptuneEngine';
 import { InputManager } from '../core/InputManager';
 import { createInitialState } from '../core/GameState';
+import { pixelText } from '../core/UIHelper';
 
 export class BootScene extends Phaser.Scene {
   private bootT = 0;
@@ -51,12 +52,8 @@ export class BootScene extends Phaser.Scene {
     this.gfx = this.add.graphics();
     const cx = SCREEN_W / 2;
     const cy = SCREEN_H / 2 - 10;
-    this.progressText = this.add.text(cx, cy + 36, '正在准备像素资源 0%', {
-      fontFamily: FONT_FAMILY, fontSize: '9px', color: '#8a90a8',
-    }).setOrigin(0.5, 0);
-    this.add.text(cx, SCREEN_H - 24, 'PAL.JS · 像素版', {
-      fontFamily: FONT_FAMILY, fontSize: '8px', color: '#4a5068',
-    }).setOrigin(0.5, 0);
+    this.progressText = pixelText(this, cx, cy + 36, '正在准备像素资源 0%', 9, '#8a90a8', 0.5, false);
+    pixelText(this, cx, SCREEN_H - 24, 'PAL.JS · 像素版', 8, '#4a5068', 0.5, false);
   }
 
   update(_time: number, dt: number): void {

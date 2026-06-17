@@ -2,11 +2,12 @@
  * WeddingScene — 拜堂成亲场景
  */
 import Phaser from 'phaser';
-import { SCREEN_W, SCREEN_H, FONT_FAMILY } from '../config';
+import { SCREEN_W, SCREEN_H } from '../config';
 import type { GameState } from '../types';
 import type { InputManager } from '../core/InputManager';
 import type { ChiptuneEngine } from '../core/ChiptuneEngine';
 import { DialogManager } from '../core/DialogManager';
+import { pixelText } from '../core/UIHelper';
 
 export class WeddingScene extends Phaser.Scene {
   private gameTime = 0;
@@ -32,10 +33,7 @@ export class WeddingScene extends Phaser.Scene {
 
     // 创建持久显示对象
     this.gfx = this.add.graphics();
-    this.add.text(SCREEN_W / 2, 26, '囍', {
-      fontFamily: FONT_FAMILY, fontSize: '36px', color: '#ffd24d',
-      shadow: { color: '#000', fill: true, offsetX: 1, offsetY: 1 },
-    }).setOrigin(0.5, 0);
+    pixelText(this, SCREEN_W / 2, 26, '囍', 36, '#ffd24d', 0.5);
 
     this.heroImg = this.add.image(124, 100, 'sprite:hero').setDisplaySize(36, 48);
     this.lingerImg = this.add.image(168, 100, 'sprite:linger').setDisplaySize(36, 48);

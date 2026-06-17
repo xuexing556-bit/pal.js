@@ -2,11 +2,12 @@
  * ExploreScene — 主游戏场景：地图、行走、碰撞、NPC、场景切换
  */
 import Phaser from 'phaser';
-import { TILE, WALK_SPEED, SCREEN_W, SCREEN_H, DIRS, FONT_FAMILY } from '../config';
+import { TILE, WALK_SPEED, SCREEN_W, SCREEN_H, DIRS } from '../config';
 import type { Direction, GameState, NpcDef, ChangeMapParams, Chapter } from '../types';
 import type { InputManager } from '../core/InputManager';
 import type { ChiptuneEngine } from '../core/ChiptuneEngine';
 import { DialogManager } from '../core/DialogManager';
+import { pixelText } from '../core/UIHelper';
 import { MAPS, tileAt } from '../data/maps';
 import { SOLID_TILES } from '../data/tiles';
 import { Chapter1 } from '../chapters/Chapter1';
@@ -89,14 +90,8 @@ export class ExploreScene extends Phaser.Scene {
     }
 
     // HUD 文字
-    this.mapNameText = this.add.text(6, 4, '', {
-      fontFamily: FONT_FAMILY, fontSize: '9px', color: '#f2e6c0',
-      shadow: { color: '#000', fill: true, offsetX: 1, offsetY: 1 },
-    });
-    this.hintText = this.add.text(6, SCREEN_H - 13, '', {
-      fontFamily: FONT_FAMILY, fontSize: '9px', color: '#9fd8a8',
-      shadow: { color: '#000', fill: true, offsetX: 1, offsetY: 1 },
-    });
+    this.mapNameText = pixelText(this, 6, 4, '', 9, '#f2e6c0');
+    this.hintText = pixelText(this, 6, SCREEN_H - 13, '', 9, '#9fd8a8');
   }
 
   changeMap(mapId: string, tx: number, ty: number, dir?: string): void {

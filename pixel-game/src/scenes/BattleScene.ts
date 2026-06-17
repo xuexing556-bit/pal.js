@@ -2,13 +2,13 @@
  * BattleScene — 回合制战斗（并行覆盖场景）
  */
 import Phaser from 'phaser';
-import { SCREEN_W, SCREEN_H, FONT_FAMILY } from '../config';
+import { SCREEN_W, SCREEN_H } from '../config';
 import type { GameState } from '../types';
 import type { EnemyConfig, BattleMenuItem, BattleSceneData } from '../types/battle';
 import type { InputManager } from '../core/InputManager';
 import type { ChiptuneEngine } from '../core/ChiptuneEngine';
 import { rollDamage, ATTACK_DAMAGE, SKILL_DAMAGE, SKILL_MP_COST, POTION_HEAL, clampHp } from '../core/BattleMath';
-import { drawBox, drawHpBar } from '../core/UIHelper';
+import { drawBox, drawHpBar, pixelText } from '../core/UIHelper';
 
 export class BattleScene extends Phaser.Scene {
   private state!: GameState;
@@ -59,24 +59,23 @@ export class BattleScene extends Phaser.Scene {
     this.gfx = this.add.graphics();
     this.enemyImg = this.add.image(SCREEN_W / 2, 80, 'sprite:hero').setScale(4);
 
-    const f = (sz: string, c: string) => ({ fontFamily: FONT_FAMILY, fontSize: sz, color: c });
-    this.eNameText = this.add.text(16, 13, '', f('10px', '#f2a0a0'));
-    this.heroNameText = this.add.text(16, SCREEN_H - 58, '李逍遥', f('10px', '#7ec8e3'));
-    this.heroHpText = this.add.text(16, SCREEN_H - 44, '', f('9px', '#e8e8e8'));
-    this.heroMpText = this.add.text(16, SCREEN_H - 27, '', f('9px', '#e8e8e8'));
+    this.eNameText = pixelText(this, 16, 13, '', 10, '#f2a0a0', 0, false);
+    this.heroNameText = pixelText(this, 16, SCREEN_H - 58, '李逍遥', 10, '#7ec8e3', 0, false);
+    this.heroHpText = pixelText(this, 16, SCREEN_H - 44, '', 9, '#e8e8e8', 0, false);
+    this.heroMpText = pixelText(this, 16, SCREEN_H - 27, '', 9, '#e8e8e8', 0, false);
 
     // 菜单项池（最多 3 项）
     for (let i = 0; i < 3; i++) {
       const y = SCREEN_H - 60 + i * 14;
       this.menuItems.push({
-        cursor: this.add.text(SCREEN_W - 122, y, '', f('10px', '#ffd24d')),
-        label: this.add.text(SCREEN_W - 108, y, '', f('10px', '#e8e8e8')),
+        cursor: pixelText(this, SCREEN_W - 122, y, '', 10, '#ffd24d', 0, false),
+        label: pixelText(this, SCREEN_W - 108, y, '', 10, '#e8e8e8', 0, false),
       });
     }
 
     // 消息区
-    this.msgText = this.add.text(18, SCREEN_H - 98, '', f('10px', '#f2e6c0'));
-    this.msgIndicator = this.add.text(SCREEN_W - 26, SCREEN_H - 88, '', f('9px', '#ffd24d'));
+    this.msgText = pixelText(this, 18, SCREEN_H - 98, '', 10, '#f2e6c0', 0, false);
+    this.msgIndicator = pixelText(this, SCREEN_W - 26, SCREEN_H - 88, '', 9, '#ffd24d', 0, false);
   }
 
   private refreshMenu(): void {
